@@ -81,9 +81,10 @@
   .month-cell{background:var(--surface);border:1px solid var(--border);border-radius:6px;min-height:56px;padding:4px 6px;font-size:11px;cursor:pointer;}
   .month-cell.other{opacity:.4;}
   .month-cell.today{border-color:var(--text);border-width:2px;}
-  .month-dots{display:flex;gap:6px;margin-top:4px;}
-  .month-dots span.c{color:var(--coral-text);}
-  .month-dots span.g{color:var(--green-text);}
+  .month-dots{display:flex;gap:4px;margin-top:5px;flex-wrap:wrap;}
+  .month-dots span{font-size:11px;font-weight:700;padding:1px 6px;border-radius:8px;display:inline-block;}
+  .month-dots span.c{background:var(--coral-bg);color:var(--coral-text);}
+  .month-dots span.g{background:var(--green-bg);color:var(--green-text);}
   .month-legend{display:flex;gap:16px;margin-top:10px;font-size:12px;color:var(--text-light);}
 
   /* Modal */
@@ -206,6 +207,11 @@ function weekNumber(d){
 }
 function sameDate(a,b){ return isoDate(a)===isoDate(b); }
 function fmtDateShort(d){ return d.getDate()+'.'+(d.getMonth()+1)+'.'; }
+function fmtDatoNorsk(iso){
+  if(!iso) return '';
+  const d = fromIso(iso);
+  return d.getDate()+'. '+MONTH_LABELS[d.getMonth()]+' '+d.getFullYear();
+}
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function toast(msg, type){
   const el = document.getElementById('toast');
@@ -485,7 +491,8 @@ function renderModal(){
           ${S.fag.map(f=>`<option value="${f.id}" ${f.id===m.fag_id?'selected':''}>${esc(f.kode)}</option>`).join('')}
         </select>
         <label>Dato</label>
-        <input type="date" id="regDato" value="${m.dato}">
+        <input type="date" id="regDato" value="${m.dato}" oninput="document.getElementById('regDatoDisplay').textContent = fmtDatoNorsk(this.value)">
+        <div id="regDatoDisplay" style="font-size:12px;color:var(--text-light);margin-top:4px;">${fmtDatoNorsk(m.dato)}</div>
         <label>Perioder</label>
         <div class="periode-grid">
           ${[...PERIODER_VANLIG,...PERIODER_KVELD].map(p=>`
