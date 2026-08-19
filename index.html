@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vikarordning</title>
+<style>
+  :root{
+    --bg:#f7f7f5; --surface:#ffffff; --border:#e3e2de; --text:#1f1f1d; --text-light:#6b6b66;
+    --accent:#1f1f1d; --accent-text:#ffffff;
+    --coral-bg:#FAECE7; --coral-text:#993C1D;
+    --green-bg:#EAF3DE; --green-text:#27500A;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);}
+  #app{max-width:1000px;margin:0 auto;padding:16px;}
+  h1{font-size:20px;font-weight:600;margin:0;}
+  h2{font-size:16px;font-weight:600;margin:0 0 12px;}
+  button{font-family:inherit;cursor:pointer;border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:8px 14px;font-size:14px;color:var(--text);}
+  button:hover{background:#f0f0ee;}
+  button.btn-primary{background:var(--accent);color:var(--accent-text);border-color:var(--accent);}
+  button.btn-primary:hover{opacity:.9;}
+  button.btn-danger{color:#993C1D;border-color:#F0997B;}
+  input,select,textarea{font-family:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;width:100%;background:var(--surface);color:var(--text);}
+  label{font-size:13px;color:var(--text-light);display:block;margin:10px 0 4px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;}
+
+  /* Login */
+  .login-wrap{max-width:340px;margin:80px auto;text-align:center;}
+  .login-wrap h1{margin-bottom:20px;}
+  .login-wrap .err{color:#993C1D;font-size:13px;margin-top:8px;min-height:18px;}
+
+  /* Nav */
+  .topnav{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+  .tabs{display:flex;gap:4px;flex-wrap:wrap;}
+  .tabs button{background:transparent;border:none;padding:8px 12px;color:var(--text-light);}
+  .tabs button.active{background:var(--surface);color:var(--text);border:1px solid var(--border);font-weight:600;}
+
+  /* Dashboard header */
+  .dash-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
+  .mode-toggle{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px;gap:2px;}
+  .mode-toggle button{border:none;background:transparent;padding:6px 12px;font-size:13px;}
+  .mode-toggle button.active{background:var(--bg);font-weight:600;}
+  .dash-nav{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+  .dash-nav .navlabel{font-weight:600;font-size:14px;min-width:160px;}
+  .dash-nav button.icon{padding:6px 10px;}
+  .spacer{flex:1;}
+  .stat-pill{font-size:13px;}
+  .stat-pill.coral{color:var(--coral-text);}
+  .stat-pill.green{color:var(--green-text);}
+
+  /* Day view */
+  .day-slot{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+  .day-slot:last-child{border-bottom:none;}
+  .day-slot .plabel{width:70px;font-size:12px;color:var(--text-light);flex-shrink:0;}
+  .day-slot .cards{flex:1;display:flex;flex-direction:column;gap:6px;}
+  .day-empty{color:var(--text-light);font-size:13px;}
+  .slot-card{border-radius:8px;padding:8px 12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .slot-card.needs{background:var(--coral-bg);color:var(--coral-text);}
+  .slot-card.assigned{background:var(--green-bg);color:var(--green-text);}
+  .slot-card .main{font-size:13px;font-weight:600;}
+  .slot-card .sub{font-size:12px;opacity:.8;}
+  .add-slot-btn{font-size:12px;color:var(--text-light);background:none;border:1px dashed var(--border);padding:6px 10px;}
+
+  /* Week view */
+  .week-scroll{overflow-x:auto;}
+  .week-grid{display:grid;grid-template-columns:56px repeat(5,minmax(120px,1fr));gap:3px;min-width:640px;}
+  .week-grid .wh{font-size:12px;color:var(--text-light);text-align:center;padding:4px 0;}
+  .week-grid .ph{font-size:11px;color:var(--text-light);display:flex;align-items:center;justify-content:center;}
+  .week-cell{background:var(--surface);border:1px solid var(--border);border-radius:6px;min-height:38px;padding:3px;display:flex;flex-direction:column;gap:3px;cursor:pointer;}
+  .week-cell:hover{border-color:#c9c9c4;}
+  .week-chip{border-radius:5px;padding:3px 6px;font-size:11px;line-height:1.3;}
+  .week-chip.needs{background:var(--coral-bg);color:var(--coral-text);}
+  .week-chip.assigned{background:var(--green-bg);color:var(--green-text);}
+  .week-chip b{display:block;font-weight:600;}
+
+  /* Month view */
+  .month-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;}
+  .month-grid .wh{font-size:11px;color:var(--text-light);text-align:center;padding:2px 0;}
+  .month-cell{background:var(--surface);border:1px solid var(--border);border-radius:6px;min-height:56px;padding:4px 6px;font-size:11px;cursor:pointer;}
+  .month-cell.other{opacity:.4;}
+  .month-cell.today{border-color:var(--text);border-width:2px;}
+  .month-dots{display:flex;gap:6px;margin-top:4px;}
+  .month-dots span.c{color:var(--coral-text);}
+  .month-dots span.g{color:var(--green-text);}
+  .month-legend{display:flex;gap:16px;margin-top:10px;font-size:12px;color:var(--text-light);}
+
+  /* Modal */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50;}
+  .modal{background:var(--surface);border-radius:12px;padding:20px;max-width:420px;width:100%;max-height:90vh;overflow-y:auto;}
+  .modal h2{margin-bottom:14px;}
+  .periode-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:4px;}
+  .periode-grid label{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text);margin:0;border:1px solid var(--border);border-radius:6px;padding:5px 6px;cursor:pointer;}
+  .periode-grid input{width:auto;}
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;}
+
+  /* Tables */
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--border);}
+  th{color:var(--text-light);font-weight:600;font-size:12px;}
+  .row-add{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+  .row-add input,.row-add select{width:auto;flex:1;min-width:140px;}
+  .pill-toggle{border:none;background:var(--bg);border-radius:20px;padding:2px 10px;font-size:12px;}
+  .pill-toggle.on{background:var(--green-bg);color:var(--green-text);}
+  .pill-toggle.off{background:var(--coral-bg);color:var(--coral-text);}
+
+  /* Toast */
+  #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1f1f1d;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:100;}
+  #toast.show{opacity:1;}
+  #toast.error{background:#993C1D;}
+
+  @media (max-width:640px){
+    .dash-nav .navlabel{min-width:auto;}
+    .periode-grid{grid-template-columns:repeat(3,1fr);}
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast"></div>
+<script>
+/* ===================== CONFIG ===================== */
+const SUPABASE_URL = 'https://jxixrrpgqbjvglpkcecl.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_RSs4GqMaSVBZWoSPOYpnfA_VZemoUgG';
+const PASS_HASH = 'd081292d3bcf71216ff52580bd78981b4e117814655f3bb41c33d478c1643661';
+const SES_KEY = 'vikarordning_auth';
+
+const PERIODE_LABELS = {1:'1. time',2:'2. time',3:'3. time',4:'4. time',5:'5. time',6:'6. time',7:'7. time',8:'Kveld 1',9:'Kveld 2',10:'Kveld 3'};
+const PERIODER_VANLIG = [1,2,3,4,5,6,7];
+const PERIODER_KVELD = [8,9,10];
+const WEEKDAY_LABELS = ['Man','Tir','Ons','Tor','Fre'];
+const MONTH_LABELS = ['januar','februar','mars','april','mai','juni','juli','august','september','oktober','november','desember'];
+
+/* ===================== AUTH ===================== */
+async function sha256(s){
+  const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+function isAuth(){ return sessionStorage.getItem(SES_KEY) === '1'; }
+function setAuth(){ sessionStorage.setItem(SES_KEY, '1'); }
+function logout(){ sessionStorage.removeItem(SES_KEY); render(); }
+
+/* ===================== DATA LAYER ===================== */
+async function sbFetch(method, table, body, params){
+  const url = SUPABASE_URL + '/rest/v1/' + table + (params ? '?' + params : '');
+  const headers = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_KEY,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation'
+  };
+  const res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  if(!res.ok){
+    const t = await res.text();
+    let msg = t;
+    try{ const j = JSON.parse(t); msg = j.message || j.hint || t; }catch{}
+    throw new Error(msg);
+  }
+  const t = await res.text();
+  return t ? JSON.parse(t) : null;
+}
+const db = {
+  getAnsatte: () => sbFetch('GET','ansatte',null,'order=navn.asc'),
+  addAnsatt: p => sbFetch('POST','ansatte',p),
+  updateAnsatt: (id,p) => sbFetch('PATCH','ansatte',p,'id=eq.'+id),
+  deleteAnsatt: id => sbFetch('DELETE','ansatte',null,'id=eq.'+id),
+
+  getFag: () => sbFetch('GET','fag',null,'order=kode.asc'),
+  addFag: p => sbFetch('POST','fag',p),
+  updateFag: (id,p) => sbFetch('PATCH','fag',p,'id=eq.'+id),
+  deleteFag: id => sbFetch('DELETE','fag',null,'id=eq.'+id),
+
+  getFravaerRange: (fromIso,toIso) => sbFetch('GET','fravaer',null,
+    `select=*,laerer:laerer_id(id,navn),fag:fag_id(id,kode),vikar:vikar_id(id,navn)&dato=gte.${fromIso}&dato=lte.${toIso}&order=dato.asc,periode.asc`),
+  getFravaerAll: () => sbFetch('GET','fravaer',null,'select=laerer_id,vikar_id,dato'),
+  addFravaer: p => sbFetch('POST','fravaer',p),
+  updateFravaer: (id,p) => sbFetch('PATCH','fravaer',p,'id=eq.'+id),
+  deleteFravaer: id => sbFetch('DELETE','fravaer',null,'id=eq.'+id),
+};
+
+/* ===================== STATE ===================== */
+const S = {
+  ansatte: [], fag: [], fravaer: [],
+  dashboardMode: 'uke',
+  anchor: new Date(),
+  loading: false,
+  modal: null,
+  historikkMonth: 'all',
+};
+
+/* ===================== UTILS ===================== */
+function isoDate(d){ const dt=new Date(d); dt.setHours(12,0,0,0); return dt.toISOString().slice(0,10); }
+function fromIso(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d,12); }
+function startOfWeek(d){ const dt=new Date(d); dt.setHours(12,0,0,0); const day=dt.getDay()||7; dt.setDate(dt.getDate()-day+1); return dt; }
+function addDays(d,n){ const dt=new Date(d); dt.setDate(dt.getDate()+n); return dt; }
+function addMonths(d,n){ const dt=new Date(d); dt.setMonth(dt.getMonth()+n); return dt; }
+function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1, 12); }
+function endOfMonth(d){ return new Date(d.getFullYear(), d.getMonth()+1, 0, 12); }
+function weekNumber(d){
+  const dt = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = dt.getUTCDay() || 7;
+  dt.setUTCDate(dt.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(dt.getUTCFullYear(),0,1));
+  return Math.ceil((((dt - yearStart) / 86400000) + 1)/7);
+}
+function sameDate(a,b){ return isoDate(a)===isoDate(b); }
+function fmtDateShort(d){ return d.getDate()+'.'+(d.getMonth()+1)+'.'; }
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function toast(msg, type){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = type==='error' ? 'show error' : 'show';
+  clearTimeout(window._toastT);
+  window._toastT = setTimeout(()=>{ el.className=''; }, 3000);
+}
+function ansattNavn(id){ const a = S.ansatte.find(x=>x.id===id); return a ? a.navn : '?'; }
+
+/* ===================== RENDER ROOT ===================== */
+function render(){
+  const app = document.getElementById('app');
+  if(!isAuth()){ app.innerHTML = renderLogin(); return; }
+  app.innerHTML = `
+    <div class="topnav">
+      <h1>Vikarordning</h1>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="tabs">
+          <button class="${S.view!=='ansatte'&&S.view!=='fag'&&S.view!=='historikk'?'active':''}" onclick="setView('dashboard')">Oversikt</button>
+          <button class="${S.view==='ansatte'?'active':''}" onclick="setView('ansatte')">Ansatte</button>
+          <button class="${S.view==='fag'?'active':''}" onclick="setView('fag')">Fag</button>
+          <button class="${S.view==='historikk'?'active':''}" onclick="setView('historikk')">Historikk</button>
+        </div>
+        <button onclick="logout()">Logg ut</button>
+      </div>
+    </div>
+    <div id="view">${S.loading ? '<p class="day-empty">Laster …</p>' : renderView()}</div>
+    ${S.modal ? renderModal() : ''}
+  `;
+}
+function renderView(){
+  if(S.view==='ansatte') return renderAnsattePage();
+  if(S.view==='fag') return renderFagPage();
+  if(S.view==='historikk') return renderHistorikkPage();
+  return renderDashboard();
+}
+function setView(v){ S.view = v; if(v==='historikk') loadHistorikk(); render(); }
+
+/* ===================== LOGIN ===================== */
+function renderLogin(){
+  return `
+    <div class="login-wrap">
+      <h1>Vikarordning</h1>
+      <input type="password" id="pw" placeholder="Passord" onkeydown="if(event.key==='Enter')tryLogin()">
+      <div style="margin-top:10px;"><button class="btn-primary" style="width:100%" onclick="tryLogin()">Logg inn</button></div>
+      <div class="err" id="loginErr"></div>
+    </div>
+  `;
+}
+async function tryLogin(){
+  const pw = document.getElementById('pw').value;
+  const hash = await sha256(pw);
+  if(hash === PASS_HASH){
+    setAuth();
+    await boot();
+  } else {
+    document.getElementById('loginErr').textContent = 'Feil passord';
+  }
+}
+
+/* ===================== BOOT / LOAD ===================== */
+async function boot(){
+  S.view = 'dashboard';
+  S.loading = true; render();
+  try{
+    S.ansatte = await db.getAnsatte();
+    S.fag = await db.getFag();
+    await loadFravaerForView();
+  }catch(e){ toast('Kunne ikke laste data: '+e.message,'error'); }
+  S.loading = false; render();
+}
+async function loadFravaerForView(){
+  let from, to;
+  if(S.dashboardMode==='dag'){ from = to = isoDate(S.anchor); }
+  else if(S.dashboardMode==='uke'){ const s=startOfWeek(S.anchor); from=isoDate(s); to=isoDate(addDays(s,4)); }
+  else { const mstart=startOfMonth(S.anchor); const gridStart=startOfWeek(mstart); const mend=endOfMonth(S.anchor); const gridEnd=addDays(startOfWeek(mend),6); from=isoDate(gridStart); to=isoDate(gridEnd); }
+  try{
+    S.fravaer = await db.getFravaerRange(from,to);
+  }catch(e){ toast('Kunne ikke laste fravær: '+e.message,'error'); }
+}
+async function setMode(m){ S.dashboardMode=m; S.loading=true; render(); await loadFravaerForView(); S.loading=false; render(); }
+async function navStep(dir){
+  if(S.dashboardMode==='dag') S.anchor = addDays(S.anchor, dir);
+  else if(S.dashboardMode==='uke') S.anchor = addDays(S.anchor, dir*7);
+  else S.anchor = addMonths(S.anchor, dir);
+  S.loading=true; render(); await loadFravaerForView(); S.loading=false; render();
+}
+function gotoDay(iso){ S.anchor = fromIso(iso); S.dashboardMode='dag'; setMode('dag'); }
+
+/* ===================== DASHBOARD ===================== */
+function dashLabel(){
+  if(S.dashboardMode==='dag') return S.anchor.toLocaleDateString('nb-NO',{weekday:'long',day:'numeric',month:'long'});
+  if(S.dashboardMode==='uke'){ const s=startOfWeek(S.anchor); const e=addDays(s,4); return 'Uke '+weekNumber(S.anchor)+' · '+fmtDateShort(s)+'–'+fmtDateShort(e); }
+  return MONTH_LABELS[S.anchor.getMonth()].replace(/^./,c=>c.toUpperCase())+' '+S.anchor.getFullYear();
+}
+function countStatus(){
+  let needs=0, assigned=0;
+  S.fravaer.forEach(r=>{ if(r.vikar_id) assigned++; else needs++; });
+  return {needs,assigned};
+}
+function renderDashboard(){
+  const c = countStatus();
+  return `
+    <div class="dash-header">
+      <div class="mode-toggle">
+        <button class="${S.dashboardMode==='dag'?'active':''}" onclick="setMode('dag')">Dag</button>
+        <button class="${S.dashboardMode==='uke'?'active':''}" onclick="setMode('uke')">Uke</button>
+        <button class="${S.dashboardMode==='maned'?'active':''}" onclick="setMode('maned')">Måned</button>
+      </div>
+      <button class="btn-primary" onclick="openRegisterModal()">+ Meld fravær</button>
+    </div>
+    <div class="dash-nav">
+      <button class="icon" onclick="navStep(-1)">‹</button>
+      <span class="navlabel">${dashLabel()}</span>
+      <button class="icon" onclick="navStep(1)">›</button>
+      <span class="spacer"></span>
+      <span class="stat-pill coral">● ${c.needs} ikke tildelt</span>
+      <span class="stat-pill green">● ${c.assigned} tildelt</span>
+    </div>
+    <div class="card">
+      ${S.dashboardMode==='dag' ? renderDay() : S.dashboardMode==='uke' ? renderWeek() : renderMonth()}
+    </div>
+  `;
+}
+
+function slotCardHtml(r){
+  const cls = r.vikar_id ? 'assigned' : 'needs';
+  const main = r.vikar_id ? esc(r.vikar.navn) : esc(r.laerer.navn);
+  const sub = r.vikar_id ? (esc(r.fag.kode)+' · for '+esc(r.laerer.navn)) : esc(r.fag.kode);
+  return `<div class="slot-card ${cls}" onclick="openAssignModal('${r.id}')">
+    <div><div class="main">${main}</div><div class="sub">${sub}</div></div>
+  </div>`;
+}
+
+function renderDay(){
+  const iso = isoDate(S.anchor);
+  const rows = S.fravaer.filter(r=>r.dato===iso);
+  const all = [...PERIODER_VANLIG, ...PERIODER_KVELD];
+  return all.map(p=>{
+    const inSlot = rows.filter(r=>r.periode===p);
+    return `<div class="day-slot">
+      <div class="plabel">${PERIODE_LABELS[p]}</div>
+      <div class="cards">
+        ${inSlot.length ? inSlot.map(slotCardHtml).join('') : `<button class="add-slot-btn" onclick="openRegisterModal('${iso}',${p})">+ registrer</button>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderWeek(){
+  const weekStart = startOfWeek(S.anchor);
+  const days = [0,1,2,3,4].map(i=>addDays(weekStart,i));
+  const all = [...PERIODER_VANLIG, ...PERIODER_KVELD];
+  let grid = `<div class="week-scroll"><div class="week-grid">`;
+  grid += `<div></div>` + days.map(d=>`<div class="wh">${WEEKDAY_LABELS[d.getDay()-1]} ${fmtDateShort(d)}</div>`).join('');
+  all.forEach(p=>{
+    grid += `<div class="ph">${p<=7?p:'K'+(p-7)}</div>`;
+    days.forEach(d=>{
+      const iso = isoDate(d);
+      const cellRows = S.fravaer.filter(r=>r.dato===iso && r.periode===p);
+      const chips = cellRows.map(r=>{
+        const cls = r.vikar_id ? 'assigned' : 'needs';
+        const name = r.vikar_id ? esc(r.vikar.navn) : esc(r.laerer.navn);
+        return `<div class="week-chip ${cls}" onclick="event.stopPropagation();openAssignModal('${r.id}')"><b>${name}</b>${esc(r.fag.kode)}</div>`;
+      }).join('');
+      grid += `<div class="week-cell" onclick="openRegisterModal('${iso}',${p})">${chips}</div>`;
+    });
+  });
+  grid += `</div></div>`;
+  return grid;
+}
+
+function renderMonth(){
+  const mStart = startOfMonth(S.anchor);
+  const mEnd = endOfMonth(S.anchor);
+  const gridStart = startOfWeek(mStart);
+  const today = isoDate(new Date());
+  let cells = '';
+  for(let i=0;i<42;i++){
+    const d = addDays(gridStart,i);
+    if(i>34 && d>mEnd) break;
+    const iso = isoDate(d);
+    const inMonth = d.getMonth()===S.anchor.getMonth();
+    const rows = S.fravaer.filter(r=>r.dato===iso);
+    const needs = rows.filter(r=>!r.vikar_id).length;
+    const assigned = rows.filter(r=>r.vikar_id).length;
+    cells += `<div class="month-cell ${inMonth?'':'other'} ${iso===today?'today':''}" onclick="gotoDay('${iso}')">
+      <div>${d.getDate()}</div>
+      ${(needs||assigned) ? `<div class="month-dots">${needs?`<span class="c">● ${needs}</span>`:''}${assigned?`<span class="g">● ${assigned}</span>`:''}</div>` : ''}
+    </div>`;
+  }
+  return `
+    <div class="month-grid">
+      ${['Man','Tir','Ons','Tor','Fre','Lør','Søn'].map(w=>`<div class="wh">${w}</div>`).join('')}
+      ${cells}
+    </div>
+    <div class="month-legend"><span>● ikke tildelt</span><span>● tildelt</span><span>Klikk en dag for dagsvisning</span></div>
+  `;
+}
+
+/* ===================== REGISTER MODAL ===================== */
+function openRegisterModal(iso, periode){
+  S.modal = { type:'register', dato: iso || isoDate(S.anchor), perioder: periode ? [periode] : [], laerer_id:'', fag_id:'', notat:'' };
+  render();
+}
+function toggleModalPeriode(p){
+  const i = S.modal.perioder.indexOf(p);
+  if(i>-1) S.modal.perioder.splice(i,1); else S.modal.perioder.push(p);
+}
+function closeModal(){ S.modal = null; render(); }
+async function submitRegister(){
+  const m = S.modal;
+  const laerer_id = document.getElementById('regLaerer').value;
+  const fag_id = document.getElementById('regFag').value;
+  const dato = document.getElementById('regDato').value;
+  const notat = document.getElementById('regNotat').value.trim();
+  if(!laerer_id || !fag_id || !dato || m.perioder.length===0){ toast('Fyll ut lærer, fag, dato og minst én periode','error'); return; }
+  let okCount=0, failMsgs=[];
+  for(const p of m.perioder){
+    try{
+      await db.addFravaer({ dato, periode:p, laerer_id, fag_id, notat: notat||null });
+      okCount++;
+    }catch(e){
+      failMsgs.push(PERIODE_LABELS[p]+': '+(e.message.includes('duplicate')||e.message.includes('unique')?'allerede registrert':e.message));
+    }
+  }
+  if(okCount) toast(okCount+' fraværsperiode(r) registrert','success');
+  if(failMsgs.length) toast(failMsgs.join(' · '),'error');
+  closeModal();
+  await loadFravaerForView(); render();
+}
+
+/* ===================== ASSIGN MODAL ===================== */
+function openAssignModal(id){
+  const row = S.fravaer.find(r=>r.id===id);
+  if(!row) return;
+  S.modal = { type:'assign', row };
+  render();
+}
+async function submitAssign(){
+  const row = S.modal.row;
+  const vikar_id = document.getElementById('asgVikar').value || null;
+  const notat = document.getElementById('asgNotat').value.trim();
+  try{
+    await db.updateFravaer(row.id, { vikar_id, notat: notat||null });
+    toast('Lagret','success');
+    closeModal();
+    await loadFravaerForView(); render();
+  }catch(e){ toast('Kunne ikke lagre: '+e.message,'error'); }
+}
+async function deleteFravaerRow(){
+  const row = S.modal.row;
+  if(!confirm('Slette dette fraværet?')) return;
+  try{
+    await db.deleteFravaer(row.id);
+    toast('Slettet','success');
+    closeModal();
+    await loadFravaerForView(); render();
+  }catch(e){ toast('Kunne ikke slette: '+e.message,'error'); }
+}
+
+function renderModal(){
+  const m = S.modal;
+  if(m.type==='register'){
+    return `<div class="overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <h2>Meld fravær</h2>
+        <label>Lærer</label>
+        <select id="regLaerer">
+          <option value="">Velg lærer …</option>
+          ${S.ansatte.filter(a=>a.aktiv).map(a=>`<option value="${a.id}" ${a.id===m.laerer_id?'selected':''}>${esc(a.navn)}</option>`).join('')}
+        </select>
+        <label>Fag / klasse</label>
+        <select id="regFag">
+          <option value="">Velg fag …</option>
+          ${S.fag.map(f=>`<option value="${f.id}" ${f.id===m.fag_id?'selected':''}>${esc(f.kode)}</option>`).join('')}
+        </select>
+        <label>Dato</label>
+        <input type="date" id="regDato" value="${m.dato}">
+        <label>Perioder</label>
+        <div class="periode-grid">
+          ${[...PERIODER_VANLIG,...PERIODER_KVELD].map(p=>`
+            <label><input type="checkbox" ${m.perioder.includes(p)?'checked':''} onchange="toggleModalPeriode(${p})">${PERIODE_LABELS[p]}</label>
+          `).join('')}
+        </div>
+        <label>Notat (valgfritt)</label>
+        <textarea id="regNotat" rows="2"></textarea>
+        <div class="modal-actions">
+          <button onclick="closeModal()">Avbryt</button>
+          <button class="btn-primary" onclick="submitRegister()">Registrer</button>
+        </div>
+      </div>
+    </div>`;
+  }
+  if(m.type==='assign'){
+    const r = m.row;
+    return `<div class="overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <h2>${esc(r.laerer.navn)} · ${esc(r.fag.kode)}</h2>
+        <div style="font-size:13px;color:var(--text-light);margin-bottom:10px;">${r.dato} · ${PERIODE_LABELS[r.periode]}</div>
+        <label>Vikar</label>
+        <select id="asgVikar">
+          <option value="">Ingen valgt ennå</option>
+          ${S.ansatte.filter(a=>a.aktiv && a.id!==r.laerer_id).map(a=>`<option value="${a.id}" ${a.id===r.vikar_id?'selected':''}>${esc(a.navn)}</option>`).join('')}
+        </select>
+        <label>Notat</label>
+        <textarea id="asgNotat" rows="2">${esc(r.notat||'')}</textarea>
+        <div class="modal-actions">
+          <button class="btn-danger" onclick="deleteFravaerRow()">Slett</button>
+          <span class="spacer"></span>
+          <button onclick="closeModal()">Lukk</button>
+          <button class="btn-primary" onclick="submitAssign()">Lagre</button>
+        </div>
+      </div>
+    </div>`;
+  }
+  return '';
+}
+
+/* ===================== ANSATTE PAGE ===================== */
+function renderAnsattePage(){
+  return `<div class="card">
+    <h2>Ansatte</h2>
+    <table>
+      <tr><th>Navn</th><th>Aktiv</th><th></th></tr>
+      ${S.ansatte.map(a=>`<tr>
+        <td>${esc(a.navn)}</td>
+        <td><button class="pill-toggle ${a.aktiv?'on':'off'}" onclick="toggleAnsattAktiv('${a.id}',${!a.aktiv})">${a.aktiv?'Aktiv':'Inaktiv'}</button></td>
+        <td><button class="btn-danger" onclick="removeAnsatt('${a.id}')">Slett</button></td>
+      </tr>`).join('')}
+    </table>
+    <div class="row-add">
+      <input id="newAnsattNavn" placeholder="Navn på ny ansatt" onkeydown="if(event.key==='Enter')addAnsattNow()">
+      <button class="btn-primary" onclick="addAnsattNow()">Legg til</button>
+    </div>
+  </div>`;
+}
+async function addAnsattNow(){
+  const el = document.getElementById('newAnsattNavn');
+  const navn = el.value.trim();
+  if(!navn) return;
+  try{
+    await db.addAnsatt({navn, aktiv:true});
+    el.value='';
+    S.ansatte = await db.getAnsatte();
+    render();
+    toast('Lagt til','success');
+  }catch(e){ toast('Kunne ikke legge til: '+e.message,'error'); }
+}
+async function toggleAnsattAktiv(id, aktiv){
+  try{ await db.updateAnsatt(id,{aktiv}); S.ansatte = await db.getAnsatte(); render(); }
+  catch(e){ toast('Kunne ikke oppdatere: '+e.message,'error'); }
+}
+async function removeAnsatt(id){
+  if(!confirm('Slette denne personen?')) return;
+  try{ await db.deleteAnsatt(id); S.ansatte = await db.getAnsatte(); render(); toast('Slettet','success'); }
+  catch(e){ toast('Kan ikke slettes — har historikk i fraværslisten. Sett som inaktiv i stedet.','error'); }
+}
+
+/* ===================== FAG PAGE ===================== */
+function renderFagPage(){
+  return `<div class="card">
+    <h2>Fag / klassekoder</h2>
+    <table>
+      <tr><th>Kode</th><th>Beskrivelse</th><th></th></tr>
+      ${S.fag.map(f=>`<tr>
+        <td>${esc(f.kode)}</td>
+        <td>${esc(f.beskrivelse||'')}</td>
+        <td><button class="btn-danger" onclick="removeFag('${f.id}')">Slett</button></td>
+      </tr>`).join('')}
+    </table>
+    <div class="row-add">
+      <input id="newFagKode" placeholder="Kode (f.eks. NG4)" onkeydown="if(event.key==='Enter')addFagNow()">
+      <input id="newFagBeskr" placeholder="Beskrivelse (valgfritt)">
+      <button class="btn-primary" onclick="addFagNow()">Legg til</button>
+    </div>
+  </div>`;
+}
+async function addFagNow(){
+  const kEl = document.getElementById('newFagKode');
+  const bEl = document.getElementById('newFagBeskr');
+  const kode = kEl.value.trim();
+  if(!kode) return;
+  try{
+    await db.addFag({kode, beskrivelse: bEl.value.trim()||null});
+    kEl.value=''; bEl.value='';
+    S.fag = await db.getFag();
+    render();
+    toast('Lagt til','success');
+  }catch(e){ toast('Kunne ikke legge til: '+e.message,'error'); }
+}
+async function removeFag(id){
+  if(!confirm('Slette dette faget?')) return;
+  try{ await db.deleteFag(id); S.fag = await db.getFag(); render(); toast('Slettet','success'); }
+  catch(e){ toast('Kan ikke slettes — brukt i fraværslisten.','error'); }
+}
+
+/* ===================== HISTORIKK PAGE ===================== */
+async function loadHistorikk(){
+  S.loading = true; render();
+  try{ S._historikkRows = await db.getFravaerAll(); }
+  catch(e){ toast('Kunne ikke laste historikk: '+e.message,'error'); S._historikkRows = []; }
+  S.loading = false; render();
+}
+function setHistorikkMonth(v){ S.historikkMonth = v; render(); }
+function renderHistorikkPage(){
+  const rows = S._historikkRows || [];
+  let filtered = rows;
+  if(S.historikkMonth !== 'all'){
+    filtered = rows.filter(r => r.dato && r.dato.slice(0,7) === S.historikkMonth);
+  }
+  const stats = {};
+  S.ansatte.forEach(a=>{ stats[a.id] = {navn:a.navn, borte:0, vikar:0}; });
+  filtered.forEach(r=>{
+    if(r.laerer_id && stats[r.laerer_id]) stats[r.laerer_id].borte++;
+    if(r.vikar_id && stats[r.vikar_id]) stats[r.vikar_id].vikar++;
+  });
+  const monthOptions = [];
+  const now = new Date();
+  for(let i=0;i<12;i++){ const d=addMonths(now,-i); const v=d.toISOString().slice(0,7); monthOptions.push(`<option value="${v}" ${S.historikkMonth===v?'selected':''}>${MONTH_LABELS[d.getMonth()]} ${d.getFullYear()}</option>`); }
+  return `<div class="card">
+    <h2>Historikk (passiv oversikt)</h2>
+    <select style="max-width:220px;margin-bottom:14px;" onchange="setHistorikkMonth(this.value)">
+      <option value="all" ${S.historikkMonth==='all'?'selected':''}>Hele perioden</option>
+      ${monthOptions.join('')}
+    </select>
+    <table>
+      <tr><th>Navn</th><th>Fravær</th><th>Vikartimer</th><th>Balanse</th></tr>
+      ${Object.values(stats).sort((a,b)=>a.navn.localeCompare(b.navn,'nb')).map(s=>`
+        <tr><td>${esc(s.navn)}</td><td>${s.borte}</td><td>${s.vikar}</td><td>${s.vikar-s.borte}</td></tr>
+      `).join('')}
+    </table>
+  </div>`;
+}
+
+/* ===================== INIT ===================== */
+if(isAuth()){ boot(); } else { render(); }
+</script>
+</body>
+</html>
