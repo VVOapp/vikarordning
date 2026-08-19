@@ -523,6 +523,34 @@ function renderModal(){
       </div>
     </div>`;
   }
+  if(m.type==='edit-ansatt'){
+    return `<div class="overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <h2>Rediger ansatt</h2>
+        <label>Navn</label>
+        <input id="editAnsattNavn" value="${esc(m.navn)}">
+        <div class="modal-actions">
+          <button onclick="closeModal()">Avbryt</button>
+          <button class="btn-primary" onclick="submitEditAnsatt()">Lagre</button>
+        </div>
+      </div>
+    </div>`;
+  }
+  if(m.type==='edit-fag'){
+    return `<div class="overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <h2>Rediger fag</h2>
+        <label>Kode</label>
+        <input id="editFagKode" value="${esc(m.kode)}">
+        <label>Beskrivelse</label>
+        <input id="editFagBeskr" value="${esc(m.beskrivelse)}">
+        <div class="modal-actions">
+          <button onclick="closeModal()">Avbryt</button>
+          <button class="btn-primary" onclick="submitEditFag()">Lagre</button>
+        </div>
+      </div>
+    </div>`;
+  }
   return '';
 }
 
@@ -535,7 +563,7 @@ function renderAnsattePage(){
       ${S.ansatte.map(a=>`<tr>
         <td>${esc(a.navn)}</td>
         <td><button class="pill-toggle ${a.aktiv?'on':'off'}" onclick="toggleAnsattAktiv('${a.id}',${!a.aktiv})">${a.aktiv?'Aktiv':'Inaktiv'}</button></td>
-        <td><button class="btn-danger" onclick="removeAnsatt('${a.id}')">Slett</button></td>
+        <td style="white-space:nowrap;"><button onclick="openEditAnsattModal('${a.id}')">Rediger</button> <button class="btn-danger" onclick="removeAnsatt('${a.id}')">Slett</button></td>
       </tr>`).join('')}
     </table>
     <div class="row-add">
@@ -565,6 +593,23 @@ async function removeAnsatt(id){
   try{ await db.deleteAnsatt(id); S.ansatte = await db.getAnsatte(); render(); toast('Slettet','success'); }
   catch(e){ toast('Kan ikke slettes — har historikk i fraværslisten. Sett som inaktiv i stedet.','error'); }
 }
+function openEditAnsattModal(id){
+  const a = S.ansatte.find(x=>x.id===id);
+  if(!a) return;
+  S.modal = { type:'edit-ansatt', id, navn:a.navn };
+  render();
+}
+async function submitEditAnsatt(){
+  const id = S.modal.id;
+  const navn = document.getElementById('editAnsattNavn').value.trim();
+  if(!navn){ toast('Navn kan ikke være tomt','error'); return; }
+  try{
+    await db.updateAnsatt(id, {navn});
+    S.ansatte = await db.getAnsatte();
+    closeModal();
+    toast('Lagret','success');
+  }catch(e){ toast('Kunne ikke lagre: '+e.message,'error'); }
+}
 
 /* ===================== FAG PAGE ===================== */
 function renderFagPage(){
@@ -575,7 +620,7 @@ function renderFagPage(){
       ${S.fag.map(f=>`<tr>
         <td>${esc(f.kode)}</td>
         <td>${esc(f.beskrivelse||'')}</td>
-        <td><button class="btn-danger" onclick="removeFag('${f.id}')">Slett</button></td>
+        <td style="white-space:nowrap;"><button onclick="openEditFagModal('${f.id}')">Rediger</button> <button class="btn-danger" onclick="removeFag('${f.id}')">Slett</button></td>
       </tr>`).join('')}
     </table>
     <div class="row-add">
@@ -602,6 +647,24 @@ async function removeFag(id){
   if(!confirm('Slette dette faget?')) return;
   try{ await db.deleteFag(id); S.fag = await db.getFag(); render(); toast('Slettet','success'); }
   catch(e){ toast('Kan ikke slettes — brukt i fraværslisten.','error'); }
+}
+function openEditFagModal(id){
+  const f = S.fag.find(x=>x.id===id);
+  if(!f) return;
+  S.modal = { type:'edit-fag', id, kode:f.kode, beskrivelse:f.beskrivelse||'' };
+  render();
+}
+async function submitEditFag(){
+  const id = S.modal.id;
+  const kode = document.getElementById('editFagKode').value.trim();
+  const beskrivelse = document.getElementById('editFagBeskr').value.trim();
+  if(!kode){ toast('Kode kan ikke være tom','error'); return; }
+  try{
+    await db.updateFag(id, {kode, beskrivelse: beskrivelse||null});
+    S.fag = await db.getFag();
+    closeModal();
+    toast('Lagret','success');
+  }catch(e){ toast('Kunne ikke lagre: '+e.message,'error'); }
 }
 
 /* ===================== HISTORIKK PAGE ===================== */
