@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vikarordning</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='6'%20fill='%231f1f1d'/%3E%3Ctext%20x='16'%20y='21'%20font-family='Arial,Helvetica,sans-serif'%20font-size='11'%20font-weight='700'%20fill='%23ffffff'%20text-anchor='middle'%3EVVO%3C/text%3E%3C/svg%3E">
 <style>
   :root{
     --bg:#f7f7f5; --surface:#ffffff; --border:#e3e2de; --text:#1f1f1d; --text-light:#6b6b66;
@@ -415,12 +416,16 @@ function renderMonth(){
 
 /* ===================== REGISTER MODAL ===================== */
 function openRegisterModal(iso, periode){
-  S.modal = { type:'register', dato: iso || isoDate(S.anchor), perioder: periode ? [periode] : [], laerer_id:'', fag_id:'', notat:'' };
+  S.modal = { type:'register', dato: iso || isoDate(S.anchor), tilDato:'', perioder: periode ? [periode] : [], laerer_id:'', fag_id:'', notat:'' };
   render();
 }
 function toggleModalPeriode(p){
   const i = S.modal.perioder.indexOf(p);
   if(i>-1) S.modal.perioder.splice(i,1); else S.modal.perioder.push(p);
+}
+function selectAllPerioder(){
+  S.modal.perioder = [...PERIODER_VANLIG];
+  document.querySelectorAll('.periode-grid input[type=checkbox]').forEach((cb,i)=>{ cb.checked = i < PERIODER_VANLIG.length; });
 }
 function closeModal(){ S.modal = null; render(); }
 async function submitRegister(){
@@ -428,19 +433,35 @@ async function submitRegister(){
   const laerer_id = document.getElementById('regLaerer').value;
   const fag_id = document.getElementById('regFag').value;
   const dato = document.getElementById('regDato').value;
+  const tilDato = document.getElementById('regTilDato').value;
   const notat = document.getElementById('regNotat').value.trim();
   if(!laerer_id || !fag_id || !dato || m.perioder.length===0){ toast('Fyll ut lærer, fag, dato og minst én periode','error'); return; }
-  let okCount=0, failMsgs=[];
-  for(const p of m.perioder){
-    try{
-      await db.addFravaer({ dato, periode:p, laerer_id, fag_id, notat: notat||null });
-      okCount++;
-    }catch(e){
-      failMsgs.push(PERIODE_LABELS[p]+': '+(e.message.includes('duplicate')||e.message.includes('unique')?'allerede registrert':e.message));
+
+  const startD = fromIso(dato);
+  const endD = tilDato ? fromIso(tilDato) : startD;
+  if(endD < startD){ toast('Til dato kan ikke være før dato','error'); return; }
+
+  const dates = [];
+  let cur = startD;
+  while(cur <= endD){
+    const wd = cur.getDay(); // 0=søn,6=lør
+    if(wd !== 0 && wd !== 6) dates.push(isoDate(cur));
+    cur = addDays(cur,1);
+  }
+  if(dates.length > 130){ toast('Perioden er for lang (over ca. 6 måneder) — del den opp i flere registreringer','error'); return; }
+
+  const totalRows = dates.length * m.perioder.length;
+  if(totalRows > 20 && !confirm(`Dette registrerer ${totalRows} fraværsperioder over ${dates.length} dag(er). Fortsette?`)) return;
+
+  let okCount=0, failCount=0;
+  for(const d of dates){
+    for(const p of m.perioder){
+      try{ await db.addFravaer({ dato:d, periode:p, laerer_id, fag_id, notat: notat||null }); okCount++; }
+      catch(e){ failCount++; }
     }
   }
-  if(okCount) toast(okCount+' fraværsperiode(r) registrert','success');
-  if(failMsgs.length) toast(failMsgs.join(' · '),'error');
+  if(okCount) toast(okCount+' fraværsperiode(r) registrert'+(failCount?(' · '+failCount+' fantes allerede'):''),'success');
+  else toast('Ingen nye perioder registrert — fantes trolig allerede','error');
   closeModal();
   await loadFravaerForView(); render();
 }
@@ -493,7 +514,10 @@ function renderModal(){
         <label>Dato</label>
         <input type="date" id="regDato" value="${m.dato}" oninput="document.getElementById('regDatoDisplay').textContent = fmtDatoNorsk(this.value)">
         <div id="regDatoDisplay" style="font-size:12px;color:var(--text-light);margin-top:4px;">${fmtDatoNorsk(m.dato)}</div>
-        <label>Perioder</label>
+        <label>Til dato <span style="font-weight:400;">(valgfritt — for fravær over flere dager, f.eks. ferie eller sykdom)</span></label>
+        <input type="date" id="regTilDato" value="${m.tilDato||''}">
+        <div style="font-size:12px;color:var(--text-light);margin-top:4px;">La stå tom for kun én dag. Er den fylt ut, gjelder valgte perioder under hver virkedag i perioden.</div>
+        <label style="display:flex;justify-content:space-between;align-items:center;">Perioder <button type="button" style="font-size:11px;padding:3px 8px;" onclick="selectAllPerioder()">Velg 1.–7. time</button></label>
         <div class="periode-grid">
           ${[...PERIODER_VANLIG,...PERIODER_KVELD].map(p=>`
             <label><input type="checkbox" ${m.perioder.includes(p)?'checked':''} onchange="toggleModalPeriode(${p})">${PERIODE_LABELS[p]}</label>
