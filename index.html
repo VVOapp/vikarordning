@@ -66,11 +66,11 @@
 
   /* Week view */
   .week-scroll{overflow-x:auto;}
-  .week-grid{display:grid;grid-template-columns:56px repeat(5,minmax(120px,1fr));gap:3px;min-width:640px;}
-  .week-grid .wh{font-size:12px;color:var(--text-light);text-align:center;padding:4px 0;}
-  .week-grid .ph{font-size:11px;color:var(--text-light);display:flex;align-items:center;justify-content:center;}
-  .week-cell{background:var(--surface);border:1px solid var(--border);border-radius:6px;min-height:38px;padding:3px;display:flex;flex-direction:column;gap:3px;cursor:pointer;}
-  .week-cell:hover{border-color:#c9c9c4;}
+  .week-grid{display:grid;grid-template-columns:56px repeat(5,minmax(120px,1fr));gap:6px;min-width:640px;background:#d8d7d1;padding:1px;border-radius:8px;}
+  .week-grid .wh{font-size:12px;color:var(--text-light);text-align:center;padding:4px 0;background:var(--surface);border-radius:6px;}
+  .week-grid .ph{font-size:11px;color:var(--text-light);display:flex;align-items:center;justify-content:center;font-weight:600;background:var(--surface);border-radius:6px;}
+  .week-cell{background:var(--surface);border:1px solid #b8b7b0;border-radius:6px;min-height:38px;padding:3px;display:flex;flex-direction:column;gap:3px;cursor:pointer;}
+  .week-cell:hover{border-color:#8a897f;}
   .week-chip{border-radius:5px;padding:3px 6px;font-size:11px;line-height:1.3;}
   .week-chip.needs{background:var(--coral-bg);color:var(--coral-text);}
   .week-chip.assigned{background:var(--green-bg);color:var(--green-text);}
@@ -370,16 +370,18 @@ function renderWeek(){
   let grid = `<div class="week-scroll"><div class="week-grid">`;
   grid += `<div></div>` + days.map(d=>`<div class="wh">${WEEKDAY_LABELS[d.getDay()-1]} ${fmtDateShort(d)}</div>`).join('');
   all.forEach(p=>{
-    grid += `<div class="ph">${p<=7?p:'K'+(p-7)}</div>`;
+    const gapStyle = p===8 ? ' style="margin-top:12px"' : '';
+    grid += `<div class="ph"${gapStyle}>${p<=7?p:'K'+(p-7)}</div>`;
     days.forEach(d=>{
       const iso = isoDate(d);
       const cellRows = S.fravaer.filter(r=>r.dato===iso && r.periode===p);
       const chips = cellRows.map(r=>{
         const cls = r.vikar_id ? 'assigned' : 'needs';
         const name = r.vikar_id ? esc(r.vikar.navn) : esc(r.laerer.navn);
-        return `<div class="week-chip ${cls}" onclick="event.stopPropagation();openAssignModal('${r.id}')"><b>${name}</b>${esc(r.fag.kode)}</div>`;
+        const sub = r.vikar_id ? (esc(r.fag.kode)+' · for '+esc(r.laerer.navn)) : esc(r.fag.kode);
+        return `<div class="week-chip ${cls}" onclick="event.stopPropagation();openAssignModal('${r.id}')"><b>${name}</b>${sub}</div>`;
       }).join('');
-      grid += `<div class="week-cell" onclick="openRegisterModal('${iso}',${p})">${chips}</div>`;
+      grid += `<div class="week-cell"${gapStyle} onclick="openRegisterModal('${iso}',${p})">${chips}</div>`;
     });
   });
   grid += `</div></div>`;
